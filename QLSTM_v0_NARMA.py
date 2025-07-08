@@ -23,7 +23,7 @@ from sklearn.preprocessing import StandardScaler
 
 # Dataset
 
-from damped_shm import get_damped_shm_data
+from narma import get_narma_data
 
 # PyTorch
 import torch
@@ -316,7 +316,8 @@ def main():
 
 	dtype = torch.DoubleTensor
 
-	x, y = get_damped_shm_data()
+	# x, y = get_narma_data(seq_len=10)
+	x, y = get_narma_data(n_samples=240, seq_len=4)
 
 	num_for_train_set = int(0.67 * len(x))
 
@@ -326,55 +327,34 @@ def main():
 	x_test = x[num_for_train_set:].type(dtype)
 	y_test = y[num_for_train_set:].type(dtype)
 
-	print("x_train: ", x_train)
-	print("x_test: ", x_test)
 	print("x_train.shape: ", x_train.shape)
 	print("x_test.shape: ", x_test.shape)
-
-	x_train_transformed = x_train.unsqueeze(2)
-	x_test_transformed = x_test.unsqueeze(2)
-
-	print("x_train: ", x_train_transformed)
-	print("x_test: ", x_test_transformed)
-	print("x_train.shape: ", x_train_transformed.shape)
-	print("x_test.shape: ", x_test_transformed.shape)
-
-	print(x_train[0])
-	print(x_train_transformed[0])
-
 	print("y.shape: {}".format(y.shape))
 
-
-	# Example usage
+	# Define model parameters
 	input_size = 1
 	hidden_size = 5
-	seq_length = 4
-	batch_size = 10
-
 	output_size = 1
-
 	qnn_depth = 5
+
+	# Initialize the model
 	qlstm_cell = CustomQLSTMCell(input_size, hidden_size, output_size, qnn_depth).double()
-	
-
 	model = CustomLSTM(input_size, hidden_size, qlstm_cell).double()
-	
-	input_data = torch.randn(batch_size, seq_length, input_size).double()
 
-	# Forward pass
-	output, (h_n, c_n) = model(input_data)
-
-	print("Output shape:", output.shape)  # [batch_size, seq_length, hidden_size]
-	print("Hidden state shape:", h_n.shape)  # [batch_size, hidden_size]
-	print("Cell state shape:", c_n.shape)  # [batch_size, hidden_size]
-
-	print("Output BEFORE transpose: {}".format(output))
-
-	output = output.transpose(0,1)
-	print("Output shape:", output.shape)
-	print("Output AFTER transpose: {}".format(output))
-
-	print(output[-1])
+	# # Example usage - THIS BLOCK IS NOW COMMENTED OUT
+	# seq_length = 4
+	# batch_size = 10
+	# input_data = torch.randn(batch_size, seq_length, input_size).double()
+	# # Forward pass
+	# output, (h_n, c_n) = model(input_data)
+	# print("Output shape:", output.shape)
+	# print("Hidden state shape:", h_n.shape)
+	# print("Cell state shape:", c_n.shape)
+	# print("Output BEFORE transpose: {}".format(output))
+	# output = output.transpose(0,1)
+	# print("Output shape:", output.shape)
+	# print("Output AFTER transpose: {}".format(output))
+	# print(output[-1])
 
 	# Check the trainable parameters
 	print("Show the parameters in QLSTM.")
@@ -387,9 +367,9 @@ def main():
 
 	##
 
-	exp_name = "QLSTM_TS_MODEL_DAMPED_SHM_1"
+	exp_name = "QLSTM_TS_MODEL_NARMA_1"
 	exp_index = 1
-	train_len = len(x_train_transformed)
+	train_len = len(x_train)
 
 
 	opt = torch.optim.RMSprop(model.parameters(), lr=0.01, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)
@@ -400,12 +380,12 @@ def main():
 
 	for i in range(100):
 		iteration_list.append(i + 1)
-		train_loss_epoch = train_epoch_full(opt = opt, model = model, X = x_train_transformed, Y = y_train, batch_size = 10)
+		train_loss_epoch = train_epoch_full(opt = opt, model = model, X = x_train, Y = y_train, batch_size = 10)
 
 
 		# Calculate test loss
 		test_loss = nn.MSELoss()
-		model_res_test, _ = model(x_test_transformed)
+		model_res_test, _ = model(x_test)
 		test_loss_val = test_loss(model_res_test.transpose(0,1)[-1], y_test).detach().numpy() # 2024 11 11: .transpose(0,1)
 		print("TEST LOSS at {}-th epoch: {}".format(i, test_loss_val))
 
@@ -413,7 +393,7 @@ def main():
 		test_loss_for_all_epoch.append(test_loss_val)
 
 		# Run the test
-		test_run_res, _ = model(x.type(dtype).unsqueeze(2))
+		test_run_res, _ = model(x.type(dtype))
 		total_res = test_run_res.transpose(0,1)[-1].detach().cpu().numpy() # 2024 11 11: .transpose(0,1)
 		ground_truth_y = y.clone().detach().cpu()
 
@@ -433,5 +413,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-
-
