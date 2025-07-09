@@ -18,14 +18,16 @@ def generate_narma_data(n_samples, order):
         
     return y.reshape(-1, 1)
 
-def transform_narma_data(data, seq_len):
+def transform_narma_data(data, seq_length):
     """
     Transforms NARMA data into input-output pairs for sequence prediction.
     """
-    x, y = [], []
-    for i in range(len(data) - seq_len):
-        _x = data[i:(i + seq_len)]
-        _y = data[i + seq_len]
+    x = []
+    y = []
+
+    for i in range(len(data) - seq_length - 1):
+        _x = data[i:(i + seq_length)]
+        _y = data[i + seq_length]
         x.append(_x)
         y.append(_y)
 
@@ -34,7 +36,7 @@ def transform_narma_data(data, seq_len):
     
     return x, y
 
-def get_narma_data(n_samples=1000, order=10, seq_len=10):
+def get_narma_data(n_samples=240, order=5, seq_length=4):
     """
     Generates and transforms NARMA data for the QLSTM model.
     """
@@ -46,7 +48,7 @@ def get_narma_data(n_samples=1000, order=10, seq_len=10):
     dataset = scaler.fit_transform(narma_series)
 
     # Transform data into sequences
-    x, y = transform_narma_data(dataset, seq_len)
+    x, y = transform_narma_data(dataset, seq_length)
     
     return x, y
 

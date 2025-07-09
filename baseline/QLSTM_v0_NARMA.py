@@ -284,7 +284,7 @@ class CustomLSTM(nn.Module):
 		self.cell = lstm_cell_QT
 
 	def forward(self, x, hidden=None):
-		batch_size, seq_len, _ = x.size()
+		batch_size, seq_length, _ = x.size()
 
 		# Initialize hidden and cell states if not provided
 		if hidden is None:
@@ -296,7 +296,7 @@ class CustomLSTM(nn.Module):
 		outputs = []
 
 		# Process sequence one time step at a time
-		for t in range(seq_len):
+		for t in range(seq_length):
 			x_t = x[:, t, :]  # Extract the t-th time step
 			# print("x_t.shape: {}".format(x_t.shape))
 			out, h_t, c_t = self.cell(x_t, (h_t, c_t))  # Update hidden and cell states
@@ -316,8 +316,8 @@ def main():
 
 	dtype = torch.DoubleTensor
 
-	# x, y = get_narma_data(seq_len=10)
-	x, y = get_narma_data(n_samples=240, seq_len=4)
+	# x, y = get_narma_data(seq_length=10)
+	x, y = get_narma_data(n_samples=240, seq_length=4)
 
 	num_for_train_set = int(0.67 * len(x))
 
@@ -342,9 +342,9 @@ def main():
 	model = CustomLSTM(input_size, hidden_size, qlstm_cell).double()
 
 	# # Example usage - THIS BLOCK IS NOW COMMENTED OUT
-	# seq_length = 4
+	# seq_lengthgth = 4
 	# batch_size = 10
-	# input_data = torch.randn(batch_size, seq_length, input_size).double()
+	# input_data = torch.randn(batch_size, seq_lengthgth, input_size).double()
 	# # Forward pass
 	# output, (h_n, c_n) = model(input_data)
 	# print("Output shape:", output.shape)
@@ -367,7 +367,7 @@ def main():
 
 	##
 
-	exp_name = "QLSTM_TS_MODEL_NARMA_1"
+	exp_name = "QLSTM_TS_MODEL_NARMA_1_order_5"
 	exp_index = 1
 	train_len = len(x_train)
 

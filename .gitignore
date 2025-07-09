@@ -1,2 +1,4 @@
-QLSTM_TS_MODEL_DAMPED_SHM_1
-QLSTM_TS_MODEL_NARMA_1
+/baseline/QLSTM_TS_MODEL_DAMPED_SHM_1
+/baseline/QLSTM_TS_MODEL_NARMA_1
+/baseline/error_log.txt
+/baseline/QLSTM_TS_MODEL_NARMA_1_order_5
