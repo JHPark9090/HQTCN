@@ -169,6 +169,7 @@ def q_function(x, q_weights, n_class):
 	RY_layer(x)
 
 	# Sequence of trainable variational layers
+	# Figure 4: dashed box
 	for k in range(n_dep):
 		entangling_layer(n_qub)
 		RY_layer(q_weights[k])
