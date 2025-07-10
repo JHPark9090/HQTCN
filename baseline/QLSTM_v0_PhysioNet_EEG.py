@@ -85,7 +85,7 @@ def train_epoch(model, optimizer, loader, loss_fn, device):
         
         # Get output from the last time step
         model_res, _ = model(X_batch)
-        output = model_res[:, -1, :].squeeze()
+        output = model_res[:, -1, :].squeeze(-1)
 
         # Calculate loss and accuracy
         loss = loss_fn(output, Y_batch)
@@ -110,7 +110,7 @@ def test_epoch(model, loader, loss_fn, device):
             X_batch = X_batch.permute(0, 2, 1)
 
             model_res, _ = model(X_batch)
-            output = model_res[:, -1, :].squeeze()
+            output = model_res[:, -1, :].squeeze(-1)
 
             loss = loss_fn(output, Y_batch)
             acc = calculate_accuracy(output, Y_batch)
@@ -172,40 +172,120 @@ def test_epoch(model, loader, loss_fn, device):
 
 # 	return
 
-# --- MODIFICATION: Updated saving and plotting functions ---
-def saving(exp_name, exp_index, epoch_list, train_loss_list, test_loss_list, train_acc_list, test_acc_list, model):
-    file_name = f"{exp_name}_NO_{exp_index}_Epoch_{epoch_list[-1]}"
+# # --- MODIFICATION: Updated saving and plotting functions ---
+# def saving(exp_name, exp_index, epoch_list, train_loss_list, val_loss_list, test_loss_list, train_acc_list, val_acc_list, test_acc_list, model):
+#     file_name = f"{exp_name}_NO_{exp_index}_Epoch_{epoch_list[-1]}"
     
+#     if not os.path.exists(exp_name):
+#         os.makedirs(exp_name)
+
+#     # Save losses
+#     with open(os.path.join(exp_name, f"{file_name}_TRAINING_LOSS.pkl"), "wb") as fp:
+#         pickle.dump(train_loss_list, fp)
+#     with open(os.path.join(exp_name, f"{file_name}_VALIDATION_LOSS.pkl"), "wb") as fp: 
+#         pickle.dump(val_loss_list, fp)
+#     with open(os.path.join(exp_name, f"{file_name}_TESTING_LOSS.pkl"), "wb") as fp:
+#         pickle.dump(test_loss_list, fp)
+    
+#     # Save accuracies
+#     with open(os.path.join(exp_name, f"{file_name}_TRAINING_ACC.pkl"), "wb") as fp:
+#         pickle.dump(train_acc_list, fp)
+#     with open(os.path.join(exp_name, f"{file_name}_VALIDATION_ACC.pkl"), "wb") as fp: 
+#         pickle.dump(val_acc_list, fp)
+#     with open(os.path.join(exp_name, f"{file_name}_TESTING_ACC.pkl"), "wb") as fp:
+#         pickle.dump(test_acc_list, fp)
+
+#     # Save model
+#     torch.save(model.state_dict(), os.path.join(exp_name, f"{file_name}_torch_model.pth"))
+
+#     # Plotting
+#     plotting_data(exp_name, file_name, epoch_list, train_loss_list, val_loss_list, test_loss_list, "Loss")
+#     plotting_data(exp_name, file_name, epoch_list, train_acc_list, val_acc_list, test_acc_list, "Accuracy")
+
+## --- MODIFICATION: This function now saves a full training checkpoint. --- ##
+def save_checkpoint(exp_name, epoch, model, optimizer, train_loss_list, val_loss_list, test_loss_list, train_acc_list, val_acc_list, test_acc_list):
+    """Saves a training checkpoint and plots the current progress."""
+    
+    checkpoint_dir = exp_name
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+    
+    checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pth")
+
+    ## --- MODIFICATION: The state dictionary now includes the optimizer and epoch number. --- ##
+    state = {
+        'epoch': epoch,
+        'model_state': model.state_dict(),
+        'optimizer_state': optimizer.state_dict(),
+        'epoch_list': list(range(epoch + 1)),
+        'train_loss_list': train_loss_list,
+        'val_loss_list': val_loss_list,
+        'test_loss_list': test_loss_list,
+        'train_acc_list': train_acc_list,
+        'val_acc_list': val_acc_list,
+        'test_acc_list': test_acc_list,
+    }
+    
+    # This single file contains all information needed to resume training.
+    torch.save(state, checkpoint_path)
+    print(f"Checkpoint saved to {checkpoint_path}")
+
+    # Plotting is called after saving the checkpoint.
+    file_name_prefix = f"{exp_name}_Epoch_{epoch+1}"
+    plotting_data(checkpoint_dir, file_name_prefix, state['epoch_list'], state['train_loss_list'], state['val_loss_list'], state['test_loss_list'], "Loss")
+    plotting_data(checkpoint_dir, file_name_prefix, state['epoch_list'], state['train_acc_list'], state['val_acc_list'], state['test_acc_list'], "Accuracy")
+
+
+# def plotting_data(exp_name, file_name, epoch_list, train_list, val_list, test_list, metric_name):
+#     fig, ax = plt.subplots()
+#     ax.plot(epoch_list, train_list, '-b', label=f'Training {metric_name}')
+#     ax.plot(epoch_list, val_list, '-g', label=f'Validation {metric_name}')
+#     ax.plot(epoch_list, test_list, '-r', label=f'Testing {metric_name}')
+#     ax.legend()
+#     ax.set(xlabel='Epoch', ylabel=metric_name, title=f'{exp_name} - {metric_name} vs. Epochs')
+#     fig.savefig(os.path.join(exp_name, f"{file_name}_{metric_name.lower()}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"))
+#     plt.close(fig)
+
+## --- MODIFICATION: Plotting now handles np.nan for test metrics that are not yet calculated. --- ##
+def plotting_data(exp_dir, file_name_prefix, epoch_list, train_list, val_list, test_list, metric_name):
+    fig, ax = plt.subplots()
+    ax.plot(epoch_list, train_list, '-b', label=f'Training {metric_name}')
+    ax.plot(epoch_list, val_list, '-g', label=f'Validation {metric_name}')
+    # Matplotlib automatically skips np.nan values, correctly plotting the test line only at the end.
+    ax.plot(epoch_list, test_list, 'r--', label=f'Testing {metric_name}')
+    ax.legend()
+    ax.set(xlabel='Epoch', ylabel=metric_name, title=f'{metric_name} vs. Epochs')
+    
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    plot_path = os.path.join(exp_dir, f"{file_name_prefix}_{metric_name.lower()}_{timestamp}.pdf")
+    fig.savefig(plot_path)
+    plt.close(fig)
+
+def save_final_metrics_csv(exp_name, epoch_list, train_loss, train_acc, val_loss, val_acc, test_loss, test_acc):
+    """Saves the final training, validation, and test metrics to a single CSV file."""
+    
+    # The directory should already exist from checkpointing, but check just in case.
     if not os.path.exists(exp_name):
         os.makedirs(exp_name)
 
-    # Save losses
-    with open(os.path.join(exp_name, f"{file_name}_TRAINING_LOSS.pkl"), "wb") as fp:
-        pickle.dump(train_loss_list, fp)
-    with open(os.path.join(exp_name, f"{file_name}_TESTING_LOSS.pkl"), "wb") as fp:
-        pickle.dump(test_loss_list, fp)
-    
-    # Save accuracies
-    with open(os.path.join(exp_name, f"{file_name}_TRAINING_ACC.pkl"), "wb") as fp:
-        pickle.dump(train_acc_list, fp)
-    with open(os.path.join(exp_name, f"{file_name}_TESTING_ACC.pkl"), "wb") as fp:
-        pickle.dump(test_acc_list, fp)
+    # Create a dictionary of all the metric lists
+    metrics_data = {
+        'epoch': epoch_list,
+        'train_loss': train_loss,
+        'train_accuracy': train_acc,
+        'validation_loss': val_loss,
+        'validation_accuracy': val_acc,
+        'test_loss': test_loss,
+        'test_accuracy': test_acc
+    }
 
-    # Save model
-    torch.save(model.state_dict(), os.path.join(exp_name, f"{file_name}_torch_model.pth"))
+    # Create a pandas DataFrame
+    df_metrics = DataFrame(metrics_data)
 
-    # Plotting
-    plotting_data(exp_name, file_name, epoch_list, train_loss_list, test_loss_list, "Loss")
-    plotting_data(exp_name, file_name, epoch_list, train_acc_list, test_acc_list, "Accuracy")
-
-def plotting_data(exp_name, file_name, epoch_list, train_list, test_list, metric_name):
-    fig, ax = plt.subplots()
-    ax.plot(epoch_list, train_list, '-b', label=f'Training {metric_name}')
-    ax.plot(epoch_list, test_list, '-r', label=f'Testing {metric_name}')
-    ax.legend()
-    ax.set(xlabel='Epoch', ylabel=metric_name, title=f'{exp_name} - {metric_name} vs. Epochs')
-    fig.savefig(os.path.join(exp_name, f"{file_name}_{metric_name.lower()}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"))
-    plt.close(fig)
+    # Save the DataFrame to a CSV file
+    file_path = os.path.join(exp_name, "final_training_metrics.csv")
+    df_metrics.to_csv(file_path, index=False)
+    print(f"Final metrics saved to {file_path}")
 
 # def plotting_simulation(exp_name, exp_index, file_name, train_len, simulation_result, ground_truth):
 # 	# Plot the simulation
@@ -570,27 +650,27 @@ def main():
     FEATURE_EMBED_SIZE = 4    # Size of the classical embedding
     HIDDEN_SIZE = 4           # LSTM hidden state size
     OUTPUT_SIZE = 1           # Final output is 1 logit for binary classification
-    VQC_DEPTH = 2             # Depth of the VQC
+    VQC_DEPTH = 5             # Depth of the VQC
     
     # Qubit requirement for VQC gates
     # This is now FEATURE_EMBED_SIZE + HIDDEN_SIZE, which is much more manageable
     N_QUBITS_FOR_GATES = FEATURE_EMBED_SIZE + HIDDEN_SIZE
     
     # Training Hyperparameters
-    EPOCHS = 100
-    BATCH_SIZE = 32
+    EPOCHS = 3
+    BATCH_SIZE = 2
     LEARNING_RATE = 0.01
     
     # Dataset parameters
-    SAMPLING_FREQ = 40 # Lower sampling freq to reduce sequence length
-    N_SUBJECTS = 5 # Use a smaller subset for faster runs, increase for full experiment
+    SAMPLING_FREQ = 4 # Lower sampling freq to reduce sequence length
+    N_SUBJECTS = 3 # Use a smaller subset for faster runs, increase for full experiment
 
     # Setup device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
     # Load Data
-    train_loader, test_loader, input_dim = get_physionet_eeg_data(
+    train_loader, val_loader, test_loader, input_dim = get_physionet_eeg_data(
         batch_size=BATCH_SIZE, 
         sampling_freq=SAMPLING_FREQ,
         n_subjects=N_SUBJECTS,
@@ -606,47 +686,141 @@ def main():
     optimizer = torch.optim.RMSprop(model.parameters(), lr=LEARNING_RATE)
     loss_fn = nn.BCEWithLogitsLoss()
 
-    # --- MODIFICATION: Updated Main Training Loop ---
-    epoch_list = []
-    train_loss_list, test_loss_list = [], []
-    train_acc_list, test_acc_list = [], []
+#     # --- MODIFICATION: Updated Main Training Loop ---
+#     epoch_list = []
+#     train_loss_list, val_loss_list, test_loss_list = [], [], []
+#     train_acc_list, val_acc_list, test_acc_list = [], [], []
 
-    print("\nStarting training...")
-    for epoch in range(EPOCHS):
+#     print("\nStarting training...")
+#     for epoch in range(EPOCHS):
+#         start_time = time.time()
+        
+#         # Training
+#         train_loss, train_acc = train_epoch(model, optimizer, train_loader, loss_fn, device)
+        
+#         # Validation
+#         val_loss, val_acc = test_epoch(model, val_loader, loss_fn, device)
+
+#         # Testing
+#         test_loss, test_acc = test_epoch(model, test_loader, loss_fn, device)
+        
+#         epoch_list.append(epoch + 1)
+#         train_loss_list.append(train_loss); val_loss_list.append(val_loss); test_loss_list.append(test_loss)
+#         train_acc_list.append(train_acc); val_acc_list.append(val_acc); test_acc_list.append(test_acc)
+        
+#         epoch_time = time.time() - start_time
+#         print(f"Epoch {epoch+1}/{EPOCHS} [{epoch_time:.2f}s] - \n"
+#               f"\tTrain: Loss={train_loss:.4f}, Acc={train_acc:.4f}\n"
+#               f"\tValid: Loss={val_loss:.4f}, Acc={val_acc:.4f}\n"
+#               f"\tTest:  Loss={test_loss:.4f}, Acc={test_acc:.4f}")
+
+#         # Save final results
+#         saving(
+#             exp_name=exp_name,
+#             exp_index=exp_index,
+#             epoch_list=epoch_list,
+#             train_loss_list=train_loss_list,
+#             val_loss_list=val_loss_list,
+#             test_loss_list=test_loss_list,
+#             train_acc_list=train_acc_list,
+#             val_acc_list=val_acc_list,  
+#             test_acc_list=test_acc_list,
+#             model=model
+#         )
+#         print("Results saved.")
+
+# if __name__ == '__main__':
+#     main()
+
+
+    ## --- MODIFICATION: CHECKPOINT LOADING --- ##
+    # This block checks if a checkpoint exists and loads it to resume training.
+    start_epoch = 0
+    epoch_list = []
+    train_loss_list, val_loss_list, test_loss_list = [], [], []
+    train_acc_list, val_acc_list, test_acc_list = [], [], []
+    
+    checkpoint_path = os.path.join(exp_name, "checkpoint.pth")
+    if os.path.exists(checkpoint_path):
+        print(f"Resuming training from checkpoint: {checkpoint_path}")
+        checkpoint = torch.load(checkpoint_path)
+        model.load_state_dict(checkpoint['model_state'])
+        optimizer.load_state_dict(checkpoint['optimizer_state'])
+        start_epoch = checkpoint['epoch'] + 1
+        epoch_list = checkpoint['epoch_list'] 
+        # Load all metric histories to continue logging correctly
+        train_loss_list = checkpoint['train_loss_list']
+        val_loss_list = checkpoint['val_loss_list']
+        test_loss_list = checkpoint['test_loss_list']
+        train_acc_list = checkpoint['train_acc_list']
+        val_acc_list = checkpoint['val_acc_list']
+        test_acc_list = checkpoint['test_acc_list']
+    else:
+        print("No checkpoint found, starting new training run.")
+
+    # --- Main Training Loop ---
+    ## --- MODIFICATION: The loop now starts from 'start_epoch'. --- ##
+    print(f"\nStarting training from epoch {start_epoch}...")
+    for epoch in range(start_epoch, EPOCHS):
         start_time = time.time()
         
-        # Training
         train_loss, train_acc = train_epoch(model, optimizer, train_loader, loss_fn, device)
+        val_loss, val_acc = test_epoch(model, val_loader, loss_fn, device)
+
+        ## --- MODIFICATION: CONDITIONAL TEST EVALUATION --- ##
+        # The test set is now only evaluated on the final epoch to save time.
+        if epoch == EPOCHS - 1:
+            test_loss, test_acc = test_epoch(model, test_loader, loss_fn, device)
+        else:
+            # For other epochs, np.nan is used as a placeholder.
+            test_loss, test_acc = np.nan, np.nan
         
-        # Testing
-        test_loss, test_acc = test_epoch(model, test_loader, loss_fn, device)
-        
+        # Append results for the current epoch
         epoch_list.append(epoch + 1)
         train_loss_list.append(train_loss)
+        val_loss_list.append(val_loss)
         test_loss_list.append(test_loss)
         train_acc_list.append(train_acc)
+        val_acc_list.append(val_acc)
         test_acc_list.append(test_acc)
         
         epoch_time = time.time() - start_time
-        print(f"Epoch {epoch+1}/{EPOCHS} [{epoch_time:.2f}s] - "
-              f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f} | "
-              f"Test Loss: {test_loss:.4f}, Test Acc: {test_acc:.4f}")
+        print(f"Epoch {epoch+1}/{EPOCHS} [{epoch_time:.2f}s] - \n"
+              f"\tTrain: Loss={train_loss:.4f}, Acc={train_acc:.4f}\n"
+              f"\tValid: Loss={val_loss:.4f}, Acc={val_acc:.4f}\n"
+              f"\tTest:  Loss={test_loss:.4f}, Acc={test_acc:.4f}")
 
-    # Save final results
-    print("\nTraining complete. Saving results...")
-    saving(
+        ## --- MODIFICATION: SAVE CHECKPOINT AFTER EACH EPOCH --- ##
+        # This call saves the complete state after every epoch, allowing the run to be resumed.
+        save_checkpoint(
+            exp_name=exp_name,
+            epoch=epoch,
+            model=model,
+            optimizer=optimizer,
+            train_loss_list=train_loss_list,
+            val_loss_list=val_loss_list,
+            test_loss_list=test_loss_list,
+            train_acc_list=train_acc_list,
+            val_acc_list=val_acc_list,
+            test_acc_list=test_acc_list,
+        )
+
+    print("\n--- Training Complete ---")
+
+    ## --- FINAL STEP: SAVE METRICS TO CSV --- ##
+    # This call saves all the collected loss and accuracy data to a single CSV file.
+    print("Saving final metrics to CSV...")
+    save_final_metrics_csv(
         exp_name=exp_name,
-        exp_index=exp_index,
         epoch_list=epoch_list,
-        train_loss_list=train_loss_list,
-        test_loss_list=test_loss_list,
-        train_acc_list=train_acc_list,
-        test_acc_list=test_acc_list,
-        model=model
+        train_loss=train_loss_list,
+        train_acc=train_acc_list,
+        val_loss=val_loss_list,
+        val_acc=val_acc_list,
+        test_loss=test_loss_list,
+        test_acc=test_acc_list
     )
-    print("Results saved.")
 
 if __name__ == '__main__':
     main()
-
 

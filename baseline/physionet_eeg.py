@@ -84,7 +84,17 @@ def get_physionet_eeg_data(seed=2025, batch_size=32, sampling_freq=80, n_subject
     y = (epoched.events[:, 2] - 2).astype(np.int64)  # Labels: 0 for left, 1 for right
 
     # Train-test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=seed, stratify=y)
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=seed, stratify=y)
+    
+    # Split data into 70% training and 30% temporary set
+    X_train, X_temp, y_train, y_temp = train_test_split(
+        X, y, test_size=0.3, random_state=seed, stratify=y
+    )
+    
+    # Split the 30% temporary set into 15% validation and 15% test set (50/50 split of temp)
+    X_val, X_test, y_val, y_test = train_test_split(
+        X_temp, y_temp, test_size=0.5, random_state=seed, stratify=y_temp
+    )
 
     def make_tensor_dataset(X, y):
         X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
@@ -92,14 +102,16 @@ def get_physionet_eeg_data(seed=2025, batch_size=32, sampling_freq=80, n_subject
         return TensorDataset(X_tensor, y_tensor)
 
     train_dataset = make_tensor_dataset(X_train, y_train)
+    val_dataset = make_tensor_dataset(X_val, y_val)
     test_dataset = make_tensor_dataset(X_test, y_test)
 
     # Create DataLoaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     input_dim = X_train.shape
     print(f"\nData loading complete. Input data shape: {input_dim}")
-    print(f"Training samples: {len(X_train)}, Testing samples: {len(X_test)}")
+    print(f"Training samples: {len(X_train)}, Validation samples: {len(X_val)}, Testing samples: {len(X_test)}")
     
-    return train_loader, test_loader, input_dim
+    return train_loader, val_loader, test_loader, input_dim
