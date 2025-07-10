@@ -317,7 +317,7 @@ def main():
 	dtype = torch.DoubleTensor
 
 	# x, y = get_narma_data(seq_length=10)
-	x, y = get_narma_data(n_samples=240, seq_length=4)
+	x, y = get_narma_data(n_samples=240, seq_length=4, seed=42)
 
 	num_for_train_set = int(0.67 * len(x))
 

@@ -2,10 +2,14 @@ import numpy as np
 import torch
 from sklearn.preprocessing import MinMaxScaler
 
-def generate_narma_data(n_samples, order):
+def generate_narma_data(n_samples, order, seed=None):
     """
     Generates NARMA time-series data.
     """
+    # Fix the random seed for reproducibility
+    if seed is not None:
+        np.random.seed(seed)
+
     u = np.random.uniform(0, 0.5, n_samples)
     y = np.zeros(n_samples)
 
