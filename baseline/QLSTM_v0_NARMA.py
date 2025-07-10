@@ -7,6 +7,7 @@ import time
 
 import matplotlib.pyplot as plt
 from pandas import DataFrame
+import pandas as pd
 
 import warnings
 
@@ -64,7 +65,28 @@ def train_epoch_full(opt, model, X, Y, batch_size):
 
 ### Plotting and Saving
 
-def saving(exp_name, exp_index, train_len, iteration_list, train_loss_list, test_loss_list, model, simulation_result, ground_truth):
+# new function
+def save_log_to_csv(exp_name, file_name, epoch_data, timeseries_data):
+    """Saves epoch losses and final time series prediction to CSV files."""
+
+    # Create directory if it doesn't exist
+    if not os.path.exists(exp_name):
+        os.makedirs(exp_name)
+
+    # Save epoch-by-epoch losses
+    df_loss = DataFrame(epoch_data)
+    loss_csv_path = os.path.join(exp_name, file_name + "_losses.csv")
+    df_loss.to_csv(loss_csv_path, index=False)
+    print(f"Saved epoch losses to {loss_csv_path}")
+
+    # Save final time series prediction and ground truth
+    df_timeseries = DataFrame(timeseries_data)
+    ts_csv_path = os.path.join(exp_name, file_name + "_timeseries.csv")
+    df_timeseries.to_csv(ts_csv_path, index=False)
+    print(f"Saved final time series to {ts_csv_path}")
+
+
+def saving(exp_name, exp_index, train_len, val_end_idx, iteration_list, train_loss_list, val_loss_list, test_loss_list, model, simulation_result, ground_truth):
 	# Generate file name
 	file_name = exp_name + "_NO_" + str(exp_index) + "_Epoch_" + str(iteration_list[-1])
 	saved_simulation_truth = {
@@ -91,17 +113,18 @@ def saving(exp_name, exp_index, train_len, iteration_list, train_loss_list, test
 	torch.save(model.state_dict(), exp_name + "/" +  file_name + "_torch_model.pth")
 
 	# Plot
-	plotting_data(exp_name, exp_index, file_name, iteration_list, train_loss_list, test_loss_list)
-	plotting_simulation(exp_name, exp_index, file_name, train_len, simulation_result, ground_truth)
+	plotting_data(exp_name, exp_index, file_name, iteration_list, train_loss_list, val_loss_list, test_loss_list)
+	plotting_simulation(exp_name, exp_index, file_name, train_len, val_end_idx, simulation_result, ground_truth)
 
 	return
 
 
-def plotting_data(exp_name, exp_index, file_name, iteration_list, train_loss_list, test_loss_list):
+def plotting_data(exp_name, exp_index, file_name, iteration_list, train_loss_list, val_loss_list, test_loss_list):
 	# Plot train and test loss
 	fig, ax = plt.subplots()
 	# plt.yscale('log')
 	ax.plot(iteration_list, train_loss_list, '-b', label='Training Loss')
+	ax.plot(iteration_list, val_loss_list, color='orange', linestyle='--', label='Validation Loss')
 	ax.plot(iteration_list, test_loss_list, '-r', label='Testing Loss')
 	leg = ax.legend();
 
@@ -112,9 +135,10 @@ def plotting_data(exp_name, exp_index, file_name, iteration_list, train_loss_lis
 
 	return
 
-def plotting_simulation(exp_name, exp_index, file_name, train_len, simulation_result, ground_truth):
+def plotting_simulation(exp_name, exp_index, file_name, train_len, val_end_idx, simulation_result, ground_truth):
 	# Plot the simulation
 	plt.axvline(x=train_len, c='r', linestyle='--')
+	plt.axvline(x=val_end_idx, c='r', linestyle='--')
 	plt.plot(simulation_result, '-')
 	plt.plot(ground_truth.detach().numpy(), '--')
 	plt.suptitle(exp_name)
@@ -317,17 +341,32 @@ def main():
 	dtype = torch.DoubleTensor
 
 	# x, y = get_narma_data(seq_length=10)
-	x, y = get_narma_data(n_samples=240, seq_length=4, seed=42)
+	print("Getting NARMA data...")
+	x, y = get_narma_data(n_samples=240, seq_length=10, seed=2025)
 
-	num_for_train_set = int(0.67 * len(x))
+	# num_for_train_set = int(0.67 * len(x))
 
-	x_train = x[:num_for_train_set].type(dtype)
-	y_train = y[:num_for_train_set].type(dtype)
+	# x_train = x[:num_for_train_set].type(dtype)
+	# y_train = y[:num_for_train_set].type(dtype)
 
-	x_test = x[num_for_train_set:].type(dtype)
-	y_test = y[num_for_train_set:].type(dtype)
+	# x_test = x[num_for_train_set:].type(dtype)
+	# y_test = y[num_for_train_set:].type(dtype)
+
+	# Split data into training, validation, and testing sets (70%, 15%, 15%)
+	train_end_idx = int(0.70 * len(x))
+	val_end_idx = int(0.85 * len(x)) # 70% + 15%
+
+	x_train = x[:train_end_idx].type(dtype)
+	y_train = y[:train_end_idx].type(dtype)
+
+	x_val = x[train_end_idx:val_end_idx].type(dtype)
+	y_val = y[train_end_idx:val_end_idx].type(dtype)
+
+	x_test = x[val_end_idx:].type(dtype)
+	y_test = y[val_end_idx:].type(dtype)
 
 	print("x_train.shape: ", x_train.shape)
+	print("x_val.shape: ", x_val.shape)
 	print("x_test.shape: ", x_test.shape)
 	print("y.shape: {}".format(y.shape))
 
@@ -367,7 +406,7 @@ def main():
 
 	##
 
-	exp_name = "QLSTM_TS_MODEL_NARMA_1_order_5"
+	exp_name = "QLSTM_TS_MODEL_NARMA_1_order_5_batch_32"
 	exp_index = 1
 	train_len = len(x_train)
 
@@ -375,21 +414,36 @@ def main():
 	opt = torch.optim.RMSprop(model.parameters(), lr=0.01, alpha=0.99, eps=1e-08, weight_decay=0, momentum=0, centered=False)
 	
 	train_loss_for_all_epoch = []
+	val_loss_for_all_epoch = [] 
 	test_loss_for_all_epoch = []
 	iteration_list = []
 
-	for i in range(100):
-		iteration_list.append(i + 1)
-		train_loss_epoch = train_epoch_full(opt = opt, model = model, X = x_train, Y = y_train, batch_size = 10)
+	for i in range(50):
+		start_epoch_time = time.time() # Start timer
 
+		iteration_list.append(i + 1)
+		train_loss_epoch = train_epoch_full(opt = opt, model = model, X = x_train, Y = y_train, batch_size = 32)
+
+		# Calculate validation loss
+		val_loss = nn.MSELoss()
+		model_res_val, _ = model(x_val)
+		val_loss_val = val_loss(model_res_val.transpose(0,1)[-1], y_val).detach().numpy()
 
 		# Calculate test loss
 		test_loss = nn.MSELoss()
 		model_res_test, _ = model(x_test)
 		test_loss_val = test_loss(model_res_test.transpose(0,1)[-1], y_test).detach().numpy() # 2024 11 11: .transpose(0,1)
+
+		end_epoch_time = time.time() # End timer
+		epoch_duration = end_epoch_time - start_epoch_time
+
+		print("Epoch {} finished in {:.2f} seconds".format(i, epoch_duration))
+		print("TRAIN LOSS at {}-th epoch: {}".format(i, train_loss_epoch))
+		print("VAL LOSS at {}-th epoch: {}".format(i, val_loss_val))
 		print("TEST LOSS at {}-th epoch: {}".format(i, test_loss_val))
 
 		train_loss_for_all_epoch.append(train_loss_epoch)
+		val_loss_for_all_epoch.append(val_loss_val)
 		test_loss_for_all_epoch.append(test_loss_val)
 
 		# Run the test
@@ -401,12 +455,32 @@ def main():
 				exp_name = exp_name, 
 				exp_index = exp_index, 
 				train_len = train_len, 
+				val_end_idx = val_end_idx,  
 				iteration_list = iteration_list, 
 				train_loss_list = train_loss_for_all_epoch, 
+				val_loss_list = val_loss_for_all_epoch,
 				test_loss_list = test_loss_for_all_epoch, 
 				model = model, 
 				simulation_result = total_res, 
 				ground_truth = ground_truth_y)
+	 
+	# --- CSV LOGGING ---
+	# Prepare data for CSV files
+	file_name_prefix = exp_name + "_NO_" + str(exp_index) + "_Epoch_" + str(iteration_list[-1])
+	
+	epoch_log_data = {
+		'epoch': iteration_list,
+		'train_loss': train_loss_for_all_epoch,
+		'validation_loss': val_loss_for_all_epoch,
+		'test_loss': test_loss_for_all_epoch
+	}
+
+	timeseries_log_data = {
+        'prediction': total_res.flatten(),
+        'ground_truth': ground_truth_y.numpy().flatten()
+    }
+
+	save_log_to_csv(exp_name, file_name_prefix, epoch_log_data, timeseries_log_data)
 
 	return
 

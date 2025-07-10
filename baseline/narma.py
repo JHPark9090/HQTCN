@@ -40,12 +40,15 @@ def transform_narma_data(data, seq_length):
     
     return x, y
 
-def get_narma_data(n_samples=240, order=5, seq_length=4):
+def get_narma_data(n_samples=240, order=10, seq_length=10, seed=None):
     """
     Generates and transforms NARMA data for the QLSTM model.
     """
+    seed = seed
+    print(f"seed: {seed}")
+
     # Generate NARMA data
-    narma_series = generate_narma_data(n_samples, order)
+    narma_series = generate_narma_data(n_samples, order, seed=seed)
 
     # Normalize the dataset
     scaler = MinMaxScaler(feature_range=(-1, 1))
