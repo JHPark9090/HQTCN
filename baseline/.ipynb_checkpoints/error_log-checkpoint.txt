@@ -1,0 +1,24 @@
+/pscratch/sd/p/pakmasha/QTCN/baseline/QLSTM_v0_PhysioNet_EEG.py:9: DeprecationWarning: 
+Pyarrow will become a required dependency of pandas in the next major release of pandas (pandas 3.0),
+(to allow more performant data types, such as the Arrow string type, and better interoperability with other libraries)
+but was not found to be installed on your system.
+If this would cause problems for you,
+please provide us feedback at https://github.com/pandas-dev/pandas/issues/54466
+        
+  from pandas import DataFrame
+Using device: cuda
+Loading and processing data for subject 1/3...
+Loading and processing data for subject 2/3...
+Loading and processing data for subject 3/3...
+
+Concatenating data from all subjects...
+
+Data loading complete. Input data shape: (92, 64, 13)
+Training samples: 92, Validation samples: 20, Testing samples: 20
+Resuming training from checkpoint: QLSTM_EEG_Classification/checkpoint.pth
+
+Starting training from epoch 5...
+
+--- Training Complete ---
+Saving final metrics to CSV...
+Final metrics saved to QLSTM_EEG_Classification/final_training_metrics.csv
