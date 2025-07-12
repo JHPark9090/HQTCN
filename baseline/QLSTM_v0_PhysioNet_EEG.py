@@ -657,7 +657,7 @@ def main():
     N_QUBITS_FOR_GATES = FEATURE_EMBED_SIZE + HIDDEN_SIZE
     
     # Training Hyperparameters
-    EPOCHS = 50
+    EPOCHS = 30
     BATCH_SIZE = 32
     LEARNING_RATE = 0.01
     

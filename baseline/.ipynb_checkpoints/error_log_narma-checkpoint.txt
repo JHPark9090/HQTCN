@@ -1,0 +1,67 @@
+/pscratch/sd/p/pakmasha/QTCN/baseline/QLSTM_v0_NARMA.py:9: DeprecationWarning: 
+Pyarrow will become a required dependency of pandas in the next major release of pandas (pandas 3.0),
+(to allow more performant data types, such as the Arrow string type, and better interoperability with other libraries)
+but was not found to be installed on your system.
+If this would cause problems for you,
+please provide us feedback at https://github.com/pandas-dev/pandas/issues/54466
+        
+  from pandas import DataFrame
+Getting NARMA data...
+seed: 2025
+x_train.shape:  torch.Size([160, 10, 1])
+x_val.shape:  torch.Size([34, 10, 1])
+x_test.shape:  torch.Size([35, 10, 1])
+y.shape: torch.Size([229, 1])
+Show the parameters in QLSTM.
+Parameter name: cell.input_gate.weights
+Parameter shape: torch.Size([5, 6])
+Parameter name: cell.forget_gate.weights
+Parameter shape: torch.Size([5, 6])
+Parameter name: cell.cell_gate.weights
+Parameter shape: torch.Size([5, 6])
+Parameter name: cell.output_gate.weights
+Parameter shape: torch.Size([5, 6])
+Parameter name: cell.output_post_processing.weight
+Parameter shape: torch.Size([1, 5])
+Parameter name: cell.output_post_processing.bias
+Parameter shape: torch.Size([1])
+Epoch 0 finished in 224.09 seconds
+TRAIN LOSS at 0-th epoch: 0.10387699913330391
+VAL LOSS at 0-th epoch: 0.1258204668902787
+TEST LOSS at 0-th epoch: 0.09581238200351674
+Epoch 1 finished in 221.76 seconds
+TRAIN LOSS at 1-th epoch: 0.07166543097583508
+VAL LOSS at 1-th epoch: 0.1447487253799601
+TEST LOSS at 1-th epoch: 0.11297684950274799
+Epoch 2 finished in 227.27 seconds
+TRAIN LOSS at 2-th epoch: 0.0676160227628077
+VAL LOSS at 2-th epoch: 0.13900099433790108
+TEST LOSS at 2-th epoch: 0.10879417237946758
+Epoch 3 finished in 239.29 seconds
+TRAIN LOSS at 3-th epoch: 0.06492840336632315
+VAL LOSS at 3-th epoch: 0.13255424140877026
+TEST LOSS at 3-th epoch: 0.10396079776961419
+Epoch 4 finished in 249.27 seconds
+TRAIN LOSS at 4-th epoch: 0.06280281036987496
+VAL LOSS at 4-th epoch: 0.12608221488511417
+TEST LOSS at 4-th epoch: 0.09907053319688382
+Epoch 5 finished in 250.59 seconds
+TRAIN LOSS at 5-th epoch: 0.06102522761003526
+VAL LOSS at 5-th epoch: 0.11997122120607283
+TEST LOSS at 5-th epoch: 0.094463923327273
+Epoch 6 finished in 254.55 seconds
+TRAIN LOSS at 6-th epoch: 0.0595143630801656
+VAL LOSS at 6-th epoch: 0.11435998614841213
+TEST LOSS at 6-th epoch: 0.09027838700063615
+Epoch 7 finished in 257.26 seconds
+TRAIN LOSS at 7-th epoch: 0.05822036823806531
+VAL LOSS at 7-th epoch: 0.10925327817256919
+TEST LOSS at 7-th epoch: 0.08652683916234882
+Epoch 8 finished in 261.02 seconds
+TRAIN LOSS at 8-th epoch: 0.05711137786423291
+VAL LOSS at 8-th epoch: 0.1046512305769821
+TEST LOSS at 8-th epoch: 0.0832054527006391
+Epoch 9 finished in 264.79 seconds
+TRAIN LOSS at 9-th epoch: 0.056168341185785155
+VAL LOSS at 9-th epoch: 0.10056887645859398
+TEST LOSS at 9-th epoch: 0.08031605876552915
