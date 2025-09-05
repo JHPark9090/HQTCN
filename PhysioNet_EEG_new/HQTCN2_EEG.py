@@ -15,6 +15,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--freq", type=int, default=80)
     parser.add_argument("--n-sample", type=int, default=50)
+    parser.add_argument("--lr", type=float, default=0.001)
     parser.add_argument("--seed", type=int, default=2025)
     parser.add_argument("--resume", action="store_true", default=False)   # resume=True if typing --resume on terminal
     return parser.parse_args()
@@ -74,7 +75,7 @@ class QTCN(nn.Module):
             self._apply_pooling(self.pool_params[layer], wires)
             wires = wires[::2]  # Retain every second qubit after pooling
         # Measurement
-        return qml.expval(qml.PauliZ(self.n_qubits-1))
+        return qml.expval(qml.PauliZ(0))
 
     def _apply_convolution(self, weights, wires):
         """
@@ -188,11 +189,11 @@ def QuantumTCNN_run(seed, n_qubits, circuit_depth, input_dim, kernel_size=None, 
     print("Random Seed = ", seed)
     model = QTCN(n_qubits, circuit_depth, input_dim, kernel_size, dilation).to(device)
     criterion = nn.BCEWithLogitsLoss()  # Use BCEWithLogitsLoss for binary classification
-    optimizer = Adam(model.parameters(), lr=0.001, weight_decay=1e-4, eps=1e-8)
+    optimizer = Adam(model.parameters(), lr=args.lr, weight_decay=1e-4, eps=1e-8)
 
     # --- Checkpoint Loading Logic ---
     os.makedirs(checkpoint_dir, exist_ok=True) # <--- Create checkpoint directory if it doesn't exist
-    checkpoint_path = os.path.join(checkpoint_dir, f"q_tcnn_model_freq{args.freq}_{seed}.pth")
+    checkpoint_path = os.path.join(checkpoint_dir, f"q_tcnn_model_freq{args.freq}_sample{args.n_sample}_lr{args.lr}_{seed}.pth")
     start_epoch = 0
     train_metrics, valid_metrics = [], [] # <--- Initialize here
 
@@ -255,7 +256,7 @@ def QuantumTCNN_run(seed, n_qubits, circuit_depth, input_dim, kernel_size=None, 
         })
 
     metrics_df = pd.DataFrame(metrics)
-    csv_filename = f"QuantumTCNN_freq{args.freq}_performance_{seed}.csv"
+    csv_filename = f"QuantumTCNN_freq{args.freq}_sample{args.n_sample}_lr{args.lr}_performance_{seed}.csv"
     metrics_df.to_csv(csv_filename, index=False)
     print(f"Metrics saved to {csv_filename}")
     
@@ -273,8 +274,3 @@ if __name__ == "__main__":
 
 
 
-
-
-
-    
-    
