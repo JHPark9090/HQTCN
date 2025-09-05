@@ -142,7 +142,7 @@ class QTCN(nn.Module):
             self._apply_pooling(self.pool_params[layer], wires)
             wires = wires[::2]  # Retain every second qubit after pooling
         # Measurement
-        return qml.expval(qml.PauliZ(self.n_qubits-1))
+        return qml.expval(qml.PauliZ(0))
 
     def _apply_convolution(self, weights, wires):
         """
@@ -274,12 +274,12 @@ def save_log_to_csv(exp_name, epoch_data, timeseries_data):
         os.makedirs(exp_name)
 
     df_loss = pd.DataFrame(epoch_data)
-    loss_csv_path = os.path.join(exp_name, "hqtcn2_narma_losses.csv")
+    loss_csv_path = os.path.join(exp_name, "hqtcn2_narma_losses2.csv")
     df_loss.to_csv(loss_csv_path, index=False)
     print(f"Saved epoch losses to {loss_csv_path}")
 
     df_timeseries = pd.DataFrame(timeseries_data)
-    ts_csv_path = os.path.join(exp_name, "hqtcn2_narma_timeseries.csv")
+    ts_csv_path = os.path.join(exp_name, "hqtcn2_narma_timeseries2.csv")
     df_timeseries.to_csv(ts_csv_path, index=False)
     print(f"Saved final time series to {ts_csv_path}")
     
@@ -288,7 +288,7 @@ def save_log_to_csv(exp_name, epoch_data, timeseries_data):
 
 if __name__ == '__main__':
     # Hyperparameters
-    SEED = 2027
+    SEED = 2025
     EXP_NAME = f"HQTCN2_NARMA_Experiment_{SEED}"
     N_QUBITS = 8
     CIRCUIT_DEPTH = 2 # Number of conv/pool layers in QCNN
@@ -318,7 +318,7 @@ if __name__ == '__main__':
     ).to(device)
 
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.005, weight_decay=1e-4, eps=1e-8)
+    optimizer = optim.Adam(model.parameters(), lr=0.005, weight_decay=1e-4)
 
     # Training loop
     train_losses, val_losses, test_losses = [], [], []
@@ -370,6 +370,4 @@ if __name__ == '__main__':
         'ground_truth': labels.flatten()
     }
     save_log_to_csv(EXP_NAME, epoch_log_data, timeseries_log_data)
-
-
 
