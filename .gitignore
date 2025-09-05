@@ -17,3 +17,9 @@
 /PhysioNet_EEG_new/PhysioNet_EEG
 /baseline/LSTM_NARMA_*
 /baseline/Transformer_NARMA_*
+/baseline/QCNN_NARMA_*
+/HQTCN2_NARMA_Experiment_*
+/visualization/unused
+/hqtcn_narma.log
+/PhysioNet_EEG_new/__pycache__/
+/visualization/QLSTM_read_outputs.ipynb
