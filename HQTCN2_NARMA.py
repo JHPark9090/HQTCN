@@ -288,17 +288,18 @@ def save_log_to_csv(exp_name, epoch_data, timeseries_data):
 
 if __name__ == '__main__':
     # Hyperparameters
-    SEED = 2025
-    EXP_NAME = f"HQTCN2_NARMA_Experiment_{SEED}"
+    SEED = 2027
     N_QUBITS = 8
     CIRCUIT_DEPTH = 2 # Number of conv/pool layers in QCNN
     N_SAMPLES=240
     ORDER=10
     SEQ_LEN = 10
     BATCH_SIZE = 32
-    KERNEL_SIZE = 5
-    DILATION = 2
+    KERNEL_SIZE = 4
+    DILATION = 3
     EPOCHS = 50
+    LR = 0.05
+    EXP_NAME = f"HQTCN2_NARMA_Experiment_{SEED}_{KERNEL_SIZE}_{DILATION}_{BATCH_SIZE}_{LR}"
 
     # Set seed
     set_all_seeds(seed = SEED)
@@ -318,7 +319,7 @@ if __name__ == '__main__':
     ).to(device)
 
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.005, weight_decay=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=1e-4, eps=1e-8)
 
     # Training loop
     train_losses, val_losses, test_losses = [], [], []
