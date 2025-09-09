@@ -305,29 +305,30 @@ def save_log_to_csv(exp_name, epoch_data, timeseries_data):
 
 if __name__ == '__main__':
     # Hyperparameters
-    EXP_NAME = "TCN_NARMA_Experiment"
-    N_SAMPLES=240
-    ORDER=10
+    N_SAMPLES = 240
+    ORDER = 10
     SEQ_LEN = 10
     BATCH_SIZE = 32
     # Defines the number of output channels for each TCN layer
     NUM_CHANNELS = [32, 32, 32] 
     KERNEL_SIZE = 2
-    DROPOUT = 0.2
+    DROPOUT = 0.3
     EPOCHS = 50
-    SEED = 2025
+    SEED = 2027
+    EXP_NAME = f"TCN_NARMA_Experiment_{SEED}"
 
     # Set seed
     set_all_seeds(seed = SEED)
 
     # Load data
     train_loader, val_loader, test_loader, input_dim, scaler, full_dataset, train_size, val_size = get_narma_dataloaders(
-        n_samples=N_SAMPLES, order=ORDER, seq_len=SEQ_LEN, batch_size=BATCH_SIZE, seed=SEED
+       
     )
     
     # Initialize model
     # input_dim has shape (batch, channels, seq_len)
-    input_channels = input_dim[1] 
+    input_channels = input_dim[1]
+    print(f"Input dim: {input_dim}")    # (32, 1, 20)
     
     model = TCN_NARMA(
         input_channels=input_channels,
@@ -335,9 +336,12 @@ if __name__ == '__main__':
         kernel_size=KERNEL_SIZE,
         dropout=DROPOUT
     ).to(device)
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total: {total_params:,}  |  Trainable: {trainable_params:,}  |  Frozen: {total_params-trainable_params:,}")
 
     criterion = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4, eps=1e-8)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-4, eps=1e-8)
 
     # Training loop
     train_losses, val_losses, test_losses = [], [], []
@@ -389,5 +393,3 @@ if __name__ == '__main__':
         'ground_truth': labels.flatten()
     }
     save_log_to_csv(EXP_NAME, epoch_log_data, timeseries_log_data)
-
-
