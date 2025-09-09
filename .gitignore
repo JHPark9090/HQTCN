@@ -23,3 +23,5 @@
 /hqtcn_narma.log
 /PhysioNet_EEG_new/__pycache__/
 /visualization/QLSTM_read_outputs.ipynb
+__pycache__/
+**/.ipynb_checkpoints/
