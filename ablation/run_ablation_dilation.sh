@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=m4747_g
+#SBATCH --account=m4727_g
 #SBATCH --constraint=gpu&hbm80g
 #SBATCH --qos=shared
 #SBATCH --time=24:00:00
