@@ -26,16 +26,16 @@ This guide helps you configure and run the HQTCN ablation study on NERSC Perlmut
 
 **Current setting in batch scripts:**
 ```bash
-#SBATCH --account=m4747_g
+#SBATCH --account=m4727_g
 ```
 
 **Action:** Change to your SLURM account if different.
 
 ```bash
 # Edit the batch script
-sed -i 's/m4747_g/YOUR_ACCOUNT/g' run_ablation_dilation.sh
+sed -i 's/m4727_g/YOUR_ACCOUNT/g' run_ablation_dilation.sh
 # or
-sed -i 's/m4747_g/YOUR_ACCOUNT/g' run_ablation_depth.sh
+sed -i 's/m4727_g/YOUR_ACCOUNT/g' run_ablation_depth.sh
 ```
 
 ---
@@ -155,7 +155,7 @@ export MNE_DATA=/your/preferred/path
 
 | Line | Parameter | Current Value | Change To |
 |------|-----------|---------------|-----------|
-| 2 | `--account` | `m4747_g` | Your account |
+| 2 | `--account` | `m4727_g` | Your account |
 | 12 | `--chdir` | `/pscratch/sd/j/junghoon/HQTCN_Project` | Your project dir |
 | 13 | `--output` | `/pscratch/sd/j/junghoon/HQTCN_Project/ablation_results/...` | Your output dir |
 | 14 | `--error` | `/pscratch/sd/j/junghoon/HQTCN_Project/ablation_results/...` | Your error dir |
